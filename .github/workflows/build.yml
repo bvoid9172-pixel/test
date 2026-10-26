@@ -1,0 +1,69 @@
+name: Build Class Timer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build the widget
+        run: |
+          brew install xcodegen
+          cd widget
+          xcodegen generate
+          # XcodeGen writes a newer project format than this Mac's Xcode can read, so save it in an older one
+          perl -pi -e 's/objectVersion = \d+;/objectVersion = 60;/; s/compatibilityVersion = "Xcode [0-9.]+";/compatibilityVersion = "Xcode 14.0";/; $_ = "" if /preferredProjectObjectVersion/' ClassTimerWidget.xcodeproj/project.pbxproj
+          grep -n "objectVersion\|compatibilityVersion" ClassTimerWidget.xcodeproj/project.pbxproj || true
+          xcodebuild -project ClassTimerWidget.xcodeproj -scheme ClassTimerWidget \
+            -configuration Release -sdk macosx -derivedDataPath build \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build
+          find build -name "*.appex"
+
+      - name: Build the app
+        working-directory: app
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          npm ci
+          npx electron-builder --mac dir --arm64 --publish never
+
+      - name: Put the widget inside the app and sign it
+        run: |
+          APP="app/dist/mac-arm64/Atlantis Class Timer.app"
+          APPEX=$(find widget/build -name "ClassTimerWidget.appex" -type d | head -1)
+          echo "Widget: $APPEX"
+          mkdir -p "$APP/Contents/PlugIns"
+          cp -R "$APPEX" "$APP/Contents/PlugIns/"
+          codesign --force --deep --sign - "$APP"
+          codesign --force --sign - --entitlements widget/Support/widget.entitlements \
+            "$APP/Contents/PlugIns/ClassTimerWidget.appex"
+          codesign --force --sign - "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          ls -R "$APP/Contents/PlugIns" | head -20
+          ditto -c -k --keepParent "$APP" Class-Timer-Mac-AppleSilicon.zip
+
+      - name: Keep a copy on the run page
+        uses: actions/upload-artifact@v4
+        with:
+          name: Class-Timer-Mac-AppleSilicon
+          path: Class-Timer-Mac-AppleSilicon.zip
+
+      - name: Publish a download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "build-${{ github.run_number }}" Class-Timer-Mac-AppleSilicon.zip \
+            --title "Class Timer build ${{ github.run_number }}" \
+            --notes "Download the zip, unzip it, drag the app into Applications and open it."
