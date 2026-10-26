@@ -1,0 +1,23 @@
+{
+  "name": "atlantis-class-timer",
+  "productName": "Atlantis Class Timer",
+  "version": "1.0.0",
+  "description": "Floating always-on-top class countdown",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win zip",
+    "build:mac": "electron-builder --mac zip",
+    "build:linux": "electron-builder --linux AppImage"
+  },
+  "build": {
+    "appId": "com.dan.atlantisclasstimer",
+    "productName": "Atlantis Class Timer",
+    "files": ["main.js", "preload.js", "portal-preload.js", "banner.html", "banner-preload.js", "desk.html", "desk-preload.js", "index.html"],
+    "directories": { "output": "dist" }
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  }
+}

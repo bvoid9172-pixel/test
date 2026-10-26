@@ -1,0 +1,38 @@
+<!doctype html><html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<style>
+*{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+html,body{margin:0;background:transparent;overflow:hidden;user-select:none}
+#d{margin:6px;width:328px;height:172px;border-radius:22px;background:var(--bg,#14161f);color:var(--fg,#e8eaf2);border:1px solid var(--line,#2a2e40);box-shadow:0 6px 22px rgba(0,0,0,.35);padding:10px 16px 12px;display:flex;flex-direction:column}
+.top{display:flex;justify-content:space-between;align-items:center;-webkit-app-region:drag;height:20px;margin:-4px -6px 0}
+.top span{font-size:11px;color:var(--fg3,#8b90a8);letter-spacing:.05em;padding-left:6px}
+#m{-webkit-app-region:no-drag;background:none;border:0;color:var(--fg3,#8b90a8);font-size:16px;cursor:pointer;padding:0 6px;border-radius:6px}
+#m:hover{background:var(--line,#2a2e40)}
+#lbl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg3,#8b90a8);margin-top:2px}
+#big{font-size:42px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+#sub{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tch{font-size:12px;color:var(--fg2,#b9bdd0);height:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bar{height:5px;background:var(--bg3,#0e1018);border-radius:4px;margin:6px 0 5px;overflow:hidden}
+#fill{height:100%;width:0;background:var(--acc,#5b6cff);border-radius:4px}
+#nx{font-size:11px;color:var(--fg3,#8b90a8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#nx.heads{color:var(--acc3,#9fb0ff);font-weight:600}
+</style></head><body>
+<div id="d">
+  <div class="top"><span>⏱ CLASS TIMER</span><button id="m" title="Menu">⋯</button></div>
+  <div id="lbl">&nbsp;</div><div id="big">--:--</div><div id="sub"></div><div id="tch"></div>
+  <div id="bar"><div id="fill"></div></div><div id="nx"></div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+window.deskApi.onState(s=>{
+  if(!s)return;
+  const r=document.documentElement.style;
+  Object.entries(s.theme||{}).forEach(([k,v])=>{if(k!=='name'&&k!=='dot')r.setProperty('--'+k,v)});
+  $('lbl').textContent=s.label||'';$('big').textContent=s.big||'--:--';
+  $('sub').textContent=s.sub||'';$('tch').textContent=s.teacher||'';
+  $('fill').style.width=Math.round((s.frac||0)*100)+'%';
+  $('nx').textContent=s.next||'';$('nx').className=s.heads?'heads':'';
+});
+$('m').onclick=()=>window.deskApi.menu();
+document.addEventListener('contextmenu',e=>{e.preventDefault();window.deskApi.menu()});
+</script></body></html>
